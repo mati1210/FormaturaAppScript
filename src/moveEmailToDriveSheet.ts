@@ -1,38 +1,63 @@
 // SPDX-License-Identifier: MPL-2.0
+type Label = GoogleAppsScript.Gmail.Schema.Label;
+type Message = GoogleAppsScript.Gmail.Schema.Message;
+const Messages = Gmail.Users!.Messages!;
+const Labels = Gmail.Users!.Labels!;
 
-const prop = PropertiesService.getScriptProperties()
-const BLACKLIST = prop.getProperty("BLACKLIST")?.split(',') ?? []
-const FOLDER = prop.getProperty("FOLDER")!
-const SHEET = prop.getProperty("SHEET")!
+const props = PropertiesService.getScriptProperties().getProperties()
+const BLACKLIST = props.blacklist?.split(',') ?? []
 
-const R = /recebeu um Pix de\s+(?<name>[^\r\n]*)\s*Valor recebido\s+R\$ (?<money>[\d,]*)/gm
-const faltaLabel = GmailApp.getUserLabelByName("formatura/falta")
-const foiLabel = GmailApp.getUserLabelByName("formatura/foi")
+const re = /recebeu um Pix de\s+(?<name>[^\r\n]*)\s*Valor recebido\s+R\$ (?<money>[\d,]*)\s*Detalhes do pagamento\s*Data e hora\s*(?<date>\d{2}\/\d{2}\/\d{4}) às (?<time>\d{2}:\d{2})/gm
 
-function run() {
-    const folder = DriveApp.getFolderById(FOLDER);
-    const sheet = SpreadsheetApp.openById(SHEET).getSheetByName("Extrato")
+function getProp(p: string): string {
+    if (p in props) { return props[p] }
+    throw new Error(`failed to find property ${p}!`)
+}
+
+function getLabels(): { old: Label; new: Label; } {
+    const labels = Labels?.list('me')
+    if (!labels?.labels) throw new Error("failed to get labels!")
+
+    const old = labels.labels.find(d => d.name == getProp("oldLabel"))
+    const n = labels.labels.find(d => d.name == getProp("newLabel"))
+    if (!old || !n) { throw new Error("failed to find label!") }
+    return { old, new: n }
+}
+
+function* getMessages(label: string): Generator<GoogleAppsScript.Gmail.Schema.Message> {
+    const msgIDs = Messages.list('me', { q: `label:${label}` });
+    if (!msgIDs) { throw new Error("failed to get messages!") }
+
+    for (const msgid of msgIDs.messages ?? []) {
+        if (!msgid.id) continue
+
+        yield Messages.get('me', msgid.id, { format: "raw" })
+    }
+}
+
+function moveEmailToDriveSheet() {
+    const folder = DriveApp.getFolderById(getProp("folder"));
+    const sheet = SpreadsheetApp.openById(getProp("sheet")).getSheetByName("Extrato")
+    const labels = getLabels();
+
     if (!sheet) {
         throw new Error("failed to find spreadsheet!")
     }
 
-    for (const thread of faltaLabel.getThreads()) {
-        for (const msg of thread.getMessages()) {
-            const content = msg.getRawContent()
-            const date = msg.getDate()
+    for (const msg of getMessages(labels.old.name!)) {
+        re.lastIndex = 0
 
-            let matches = R.exec(content)
-            let name = matches?.groups?.name;
-            let money = matches?.groups?.money;
-            if (!name || !money || BLACKLIST.includes(name.trim())) { continue }
-
-            let file = folder.createFile(`${quoted_printable_decode(name)}: R\$${money} ${date.toISOString()}.eml`, content);
-
-            sheet.appendRow(["", money, "", `=HYPERLINK("${file.getUrl()}"; "comprovante")`])
+        let matches = re.exec(msg.snippet!)?.groups!;
+        if (!matches.name || !matches.money || !matches.date || !matches.time) {
+            throw new Error("data not found on snippet you'll need to parse the whole email loolll")
         }
+        let [d, mo, y] = matches.date.split('/').map(n => Number.parseInt(n, 10))
+        let [h, m] = matches.time.split(':').map(n => Number.parseInt(n, 10))
+        let date = new Date(y, mo - 1, d, h, m)
 
-        thread.removeLabel(faltaLabel)
-        thread.addLabel(foiLabel)
-        thread.moveToArchive()
+        let file = folder.createFile(Utilities.newBlob(msg.raw!, 'message/rfc822', `${matches.name}: R\$${matches.money} ${date.toISOString()}.eml`))
+        sheet.appendRow([date, "", matches.money, "", `=HYPERLINK("${file.getUrl()}"; "pix")`])
+
+        Messages.modify({ addLabelIds: [labels.new.id!], removeLabelIds: [labels.old.id!, 'INBOX'] }, 'me', msg.id!)
     }
 }
