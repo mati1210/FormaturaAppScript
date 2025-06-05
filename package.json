@@ -1,0 +1,18 @@
+{
+    "name": "move-email-to-drive-sheet",
+    "version": "1.0.0",
+    "description": "",
+    "license": "MPL-2.0",
+    "author": "",
+    "type": "module",
+    "main": "src/main.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "dependencies": {
+        "@types/google-apps-script": "^1.0.97"
+    },
+    "devDependencies": {
+        "@google/clasp": "^3.0.6-alpha"
+    }
+}
