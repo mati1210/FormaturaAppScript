@@ -56,8 +56,9 @@ function moveEmailToDriveSheet() {
         let date = new Date(y, mo - 1, d, h, m)
 
         let file = folder.createFile(Utilities.newBlob(msg.raw!, 'message/rfc822', `${matches.name}: R\$${matches.money} ${date.toISOString()}.eml`))
-        sheet.appendRow([date, "", matches.money, "", `=HYPERLINK("${file.getUrl()}"; "pix")`])
+        sheet.appendRow([date, "", matches.money, "", `=HYPERLINK("${file.getUrl()}"; "pix")`, matches.name])
 
         Messages.modify({ addLabelIds: [labels.new.id!], removeLabelIds: [labels.old.id!, 'INBOX'] }, 'me', msg.id!)
     }
 }
+
