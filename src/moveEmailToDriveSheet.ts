@@ -24,7 +24,7 @@ function getLabels(): { old: Label; new: Label; } {
     return { old, new: n }
 }
 
-function* getMessages(label: string): Generator<GoogleAppsScript.Gmail.Schema.Message> {
+function* getMessages(label: string): Generator<Message> {
     const msgIDs = Messages.list('me', { q: `label:${label}` });
     if (!msgIDs) { throw new Error("failed to get messages!") }
 
