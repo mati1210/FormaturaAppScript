@@ -9,13 +9,13 @@ const BLACKLIST = props.blacklist?.split(',') ?? []
 
 const re = /recebeu um Pix de\s+(?<name>[^\r\n]*)\s*Valor recebido\s+R\$ (?<money>[\d,]*)\s*Detalhes do pagamento\s*Data e hora\s*(?<date>\d{2}\/\d{2}\/\d{4}) às (?<time>\d{2}:\d{2})/gm
 
-function getProp(p: string): string {
-    if (p in props) { return props[p] }
-    throw new Error(`failed to find property ${p}!`)
+function getProp(prop: string): string {
+    if (prop in props) { return props[prop] }
+    throw new Error(`failed to find property ${prop}!`)
 }
 
 function getLabels(): { old: Label; new: Label; } {
-    const labels = Labels?.list('me')
+    const labels = Labels.list('me')
     if (!labels?.labels) throw new Error("failed to get labels!")
 
     const old = labels.labels.find(d => d.name == getProp("oldLabel"))
@@ -47,8 +47,8 @@ function moveEmailToDriveSheet() {
     for (const msg of getMessages(labels.old.name!)) {
         re.lastIndex = 0
 
-        let matches = re.exec(msg.snippet!)?.groups!;
-        if (!matches.name || !matches.money || !matches.date || !matches.time) {
+        let matches = re.exec(msg.snippet!)?.groups;
+        if (!matches?.name || !matches.money || !matches.date || !matches.time) {
             throw new Error("data not found on snippet you'll need to parse the whole email loolll")
         }
         let [d, mo, y] = matches.date.split('/').map(n => Number.parseInt(n, 10))
