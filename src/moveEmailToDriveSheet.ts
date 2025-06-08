@@ -51,14 +51,15 @@ function moveEmailToDriveSheet() {
         if (!matches?.name || !matches.money || !matches.date || !matches.time) {
             throw new Error("data not found on snippet you'll need to parse the whole email loolll")
         }
-        let [d, mo, y] = matches.date.split('/').map(n => Number.parseInt(n, 10))
-        let [h, m] = matches.time.split(':').map(n => Number.parseInt(n, 10))
-        let date = new Date(y, mo - 1, d, h, m)
 
-        let file = folder.createFile(Utilities.newBlob(msg.raw!, 'message/rfc822', `${matches.name}: R\$${matches.money} ${date.toISOString()}.eml`))
-        sheet.appendRow([date, "", matches.money, "", `=HYPERLINK("${file.getUrl()}"; "pix")`, matches.name])
+        if (!BLACKLIST.includes(matches.name)) {
+            let [d, mo, y] = matches.date.split('/').map(n => Number.parseInt(n, 10))
+            let [h, m] = matches.time.split(':').map(n => Number.parseInt(n, 10))
+            let date = new Date(y, mo - 1, d, h, m)
 
+            let file = folder.createFile(Utilities.newBlob(msg.raw!, 'message/rfc822', `${matches.name}: R\$${matches.money} ${date.toISOString()}.eml`))
+            sheet.appendRow([date, "", matches.money, "", `=HYPERLINK("${file.getUrl()}"; "pix")`, matches.name])
+        }
         Messages.modify({ addLabelIds: [labels.new.id!], removeLabelIds: [labels.old.id!, 'INBOX'] }, 'me', msg.id!)
     }
 }
-
