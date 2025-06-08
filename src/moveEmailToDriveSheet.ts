@@ -5,7 +5,7 @@ const Messages = Gmail.Users!.Messages!;
 const Labels = Gmail.Users!.Labels!;
 
 const props = PropertiesService.getScriptProperties().getProperties()
-const BLACKLIST = props.blacklist?.split(',') ?? []
+const BLACKLIST = props.blacklist?.split(',')?.map(s => s.trim()) ?? []
 
 const re = /recebeu um Pix de\s+(?<name>[^\r\n]*)\s*Valor recebido\s+R\$ (?<money>[\d,]*)\s*Detalhes do pagamento\s*Data e hora\s*(?<date>\d{2}\/\d{2}\/\d{4}) às (?<time>\d{2}:\d{2})/gm
 
@@ -46,14 +46,15 @@ function moveEmailToDriveSheet() {
         if (!matches?.name || !matches.money || !matches.date || !matches.time) {
             throw new Error("data not found on snippet you'll need to parse the whole email loolll")
         }
+        const name = matches.name.trim()
 
-        if (!BLACKLIST.includes(matches.name)) {
+        if (!BLACKLIST.includes(name)) {
             let [d, mo, y] = matches.date.split('/').map(n => Number.parseInt(n, 10))
             let [h, m] = matches.time.split(':').map(n => Number.parseInt(n, 10))
             let date = new Date(y, mo - 1, d, h, m)
 
-            let file = folder.createFile(Utilities.newBlob(msg.raw!, 'message/rfc822', `${matches.name}: R\$${matches.money} ${date.toISOString()}.eml`))
-            sheet.appendRow([date, "", matches.money, "", `=HYPERLINK("${file.getUrl()}"; "pix")`, matches.name])
+            let file = folder.createFile(Utilities.newBlob(msg.raw!, 'message/rfc822', `${name}: R\$${matches.money} ${date.toISOString()}.eml`))
+            sheet.appendRow([date, "", matches.money, "", `=HYPERLINK("${file.getUrl()}"; "pix")`, name])
         }
         Messages.modify({ addLabelIds: [labels.new.id!], removeLabelIds: [labels.old.id!, 'INBOX'] }, 'me', msg.id!)
     }
