@@ -4,9 +4,7 @@ type Message = GoogleAppsScript.Gmail.Schema.Message;
 const Messages = Gmail.Users!.Messages!;
 const Labels = Gmail.Users!.Labels!;
 
-const props = PropertiesService.getScriptProperties().getProperties()
 const BLACKLIST = props.blacklist?.split(',')?.map(s => s.trim()) ?? []
-
 const re = /recebeu um Pix de\s+(?<name>[^\r\n]*)\s*Valor recebido\s+R\$ (?<money>[\d,]*)\s*Detalhes do pagamento\s*Data e hora\s*(?<date>\d{2}\/\d{2}\/\d{4}) às (?<time>\d{2}:\d{2})/gm
 
 function getLabels(): { old: Label; new: Label; } {
