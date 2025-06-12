@@ -7,14 +7,15 @@ const Labels = Gmail.Users!.Labels!;
 const BLACKLIST = props.blacklist?.split(',')?.map(s => s.trim()) ?? []
 const re = /recebeu um Pix de\s+(?<name>[^\r\n]*)\s*Valor recebido\s+R\$ (?<money>[\d,]*)\s*Detalhes do pagamento\s*Data e hora\s*(?<date>\d{2}\/\d{2}\/\d{4}) às (?<time>\d{2}:\d{2})/gm
 
-function getLabels(): { old: Label; new: Label; } {
+function getLabels() {
     const labels = Labels.list('me')
     if (!labels?.labels) throw new Error("failed to get labels!")
 
     const old = labels.labels.find(d => d.name == getProp("oldLabel"))
     const n = labels.labels.find(d => d.name == getProp("newLabel"))
-    if (!old || !n) { throw new Error("failed to find label!") }
-    return { old, new: n }
+    const blacklist = labels.labels.find(d => d.name == getProp("blacklistLabel"))
+    if (!old || !n || !blacklist) { throw new Error("failed to find label!") }
+    return { old, new: n, blacklist }
 }
 
 function* getMessages(label: string): Generator<Message> {
@@ -46,7 +47,11 @@ function moveEmailToDriveSheet() {
         }
         const name = matches.name.trim()
 
-        if (!BLACKLIST.includes(name)) {
+        let nLabel;
+        if (BLACKLIST.includes(name)) {
+            nLabel = labels.blacklist
+        } else {
+            nLabel = labels.new
             let [d, mo, y] = matches.date.split('/').map(n => Number.parseInt(n, 10))
             let [h, m] = matches.time.split(':').map(n => Number.parseInt(n, 10))
             let date = new Date(y, mo - 1, d, h, m)
@@ -54,6 +59,6 @@ function moveEmailToDriveSheet() {
             let file = folder.createFile(Utilities.newBlob(msg.raw!, 'message/rfc822', `${name}: R\$${matches.money} ${date.toISOString()}.eml`))
             sheet.appendRow([date, "", matches.money, "", `=HYPERLINK("${file.getUrl()}"; "pix")`, name])
         }
-        Messages.modify({ addLabelIds: [labels.new.id!], removeLabelIds: [labels.old.id!, 'INBOX'] }, 'me', msg.id!)
+        Messages.modify({ addLabelIds: [nLabel.id!], removeLabelIds: [labels.old.id!, 'INBOX'] }, 'me', msg.id!)
     }
 }
