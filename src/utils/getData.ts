@@ -7,6 +7,7 @@ type Data = {
 function getData(sheet = getProp("currentRaffleSheet")) {
     let data = SpreadsheetApp.getActive().getSheetByName(sheet)?.getRange("A2:F")?.getValues()
     if (!data) throw new Error("failed to get data!")
+    console.log(`getting data from sheet: ${sheet}`)
 
     let res: Data = {
         vendedor: [], comprador: [], contato: [], peso: []
