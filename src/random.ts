@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
-
-function weightedRandom(val: string[][], weights: number[]) {
-    let data = val.map(v => v.join(' '))
+function weightedRandom(weights: number[]) {
     weights = weights.flat()
-    if (data.length != weights.length || weights.length <= 0) {
-        throw "length problem!";
-    }
-
     let total = weights.reduce((sum, w) => sum += Number(w), 0);
 
     const choice = Math.random() * total;
@@ -19,26 +13,34 @@ function weightedRandom(val: string[][], weights: number[]) {
         }
     }
 
-    return data.length - 1
+    return weights.length - 1
 }
 
-function testWeightedRandom(data: string[][], weights: number[], times = Math.pow(10, 5)) {
-    let weightSum = weights.reduce((sum, w) => sum + Number(w), 0);
+function getOne() {
+    const data = getData()
+
+    const idx = weightedRandom(data.peso)
+    console.log(`${data.comprador[idx]} (${data.contato[idx]})`)
+}
+
+function testWeightedRandom(times = Math.pow(10, 6)) {
+    const data = getData()
+    let weightSum = data.peso.reduce((sum, w) => sum + Number(w), 0);
 
     let counter: { [key: number]: number } = {};
+    let before = Date.now() // 'performance' is not defined
     for (let i = 0; i < times; i++) {
-        let key = weightedRandom(data, weights);
+        let key = weightedRandom(data.peso);
         if (key in counter) {
             counter[key] += 1;
         } else {
             counter[key] = 1;
         }
     }
-
-    let results = `Total samples: ${times.toLocaleString()}\n\n`;
-    for (let [idx, _] of Array.from(weights.entries()).sort((a, b) => Number(a[1]) - Number(b[1]))) {
-        const name = data[idx];
-        const weight = weights[idx];
+    let results = `samples: ${times.toLocaleString()} (took ${Date.now() - before}ms)\n\n`;
+    for (let [idx, _] of Array.from(data.peso.entries()).sort((a, b) => a[1] - b[1])) {
+        const name = data.comprador[idx];
+        const weight = data.peso[idx];
 
         const count = counter[idx];
         const actualPercent = (count / times) * 100;
