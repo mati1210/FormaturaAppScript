@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 function weightedRandom(weights: number[]) {
     weights = weights.flat()
-    let total = weights.reduce((sum, w) => sum += Number(w), 0);
+    let total = weights.reduce((sum, w) => sum += w, 0);
 
     const choice = Math.random() * total;
 
@@ -25,7 +25,7 @@ function getOne() {
 
 function testWeightedRandom(times = Math.pow(10, 6)) {
     const data = getData()
-    let weightSum = data.peso.reduce((sum, w) => sum + Number(w), 0);
+    let weightSum = data.peso.reduce((sum, w) => sum + w, 0);
 
     let counter: { [key: number]: number } = {};
     let before = Date.now() // 'performance' is not defined
