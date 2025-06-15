@@ -37,7 +37,8 @@ function testWeightedRandom(times = Math.pow(10, 6)) {
             counter[key] = 1;
         }
     }
-    let results = `samples: ${times.toLocaleString()} (took ${Date.now() - before}ms)\n\n`;
+
+    console.log(`samples: ${times.toLocaleString()} (took ${Date.now() - before}ms)`)
     for (let [idx, _] of Array.from(data.peso.entries()).sort((a, b) => a[1] - b[1])) {
         const name = data.comprador[idx];
         const weight = data.peso[idx];
@@ -47,9 +48,6 @@ function testWeightedRandom(times = Math.pow(10, 6)) {
         const expectedPercent = (weight / weightSum) * 100;
         const deviation = Math.abs(actualPercent - expectedPercent);
 
-        results += `${name}:\n ${count} (${actualPercent.toFixed(3)}%, expected ${weight}/${weightSum} ${expectedPercent.toFixed(3)}%, deviation: ${deviation.toFixed(3)}%)\n\n`;
+        console.log(`${name}:\n ${count} (${actualPercent.toFixed(3)}%, expected ${weight}/${weightSum} ${expectedPercent.toFixed(3)}%, deviation: ${deviation.toFixed(3)}%)`)
     }
-
-    Logger.log(results);
-    return results;
 }
